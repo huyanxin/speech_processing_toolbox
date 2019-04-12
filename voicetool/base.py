@@ -12,23 +12,27 @@ import numpy as np
 import wave
 import scipy.io as sio
 
-def audioread(path, sample_rate=16000, selected_channels=[0]):
+def audioread(path, sample_rate=16000, selected_channels=[1]):
     """
         read wave data like matlab's audioread
         selected_channels: for multichannel wave, return selected_channels' data 
     """
     with wave.open(path, 'rb') as fid:
+        selected_channels = [ x - 1 for x in selected_channels]
+
         params = fid.getparams()
         nchannels, samplewidth, framerate , nframes = params[:4]
-        strdata = fid.readframes(nframes)
+        strdata = fid.readframes(nframes*nchannels)
         wavedata = np.fromstring(strdata, dtype=np.int16)
         wavedata = wavedata*1.0/(32767.0*samplewidth/2)
-        wavedata = np.reshape(wavedata, [nchannels, nframes]) 
-    return wavedata[selected_channels]
+        wavedata = np.reshape(wavedata, [nframes,nchannels])
+        
+    return wavedata[:, selected_channels]
 
 def audiowrite(path, data, nchannels=1, samplewidth=2, framerate=16000):
-
-    nframes = len(data)
+    
+    data = np.reshape(data, [-1, nchannels])
+    nframes = data.shape[0]
     with wave.open(path, 'wb') as fid:
         data *= 32767.0
         fid.setparams((nchannels, samplewidth, framerate, nframes,"NONE", "not compressed"))
@@ -39,13 +43,17 @@ def enframe(data, window, win_len, inc):
     if data_len <= win_len :
         nf = 1
     else:
-        nf = int(np.ceil((1.0*data_len-win_len+inc)/inc))
-    pad_length = int((nf-1)*inc+win_len)
-    zeros = np.zeros((pad_length - data_len, ))
-    pad_signal = np.concatenate((data, zeros))
+        nf = int((data_len-win_len+inc)/inc)
+    # 2019-3-29:
+    # remove the padding, the last points will be discard
+
+    #pad_length = int((nf-1)*inc+win_len)
+    #zeros = np.zeros((pad_length - data_len, ))
+    #pad_signal = np.concatenate((data, zeros))
+
     indices = np.tile(np.arange(0,win_len), (nf,1))+ np.tile(np.arange(0,nf*inc, inc), (win_len,1)).T 
     indices = np.array(indices, dtype=np.int32)
-    frames = pad_signal[indices]
+    frames = data[indices]
     windows = np.reshape(np.tile(window, nf),[nf,win_len])
     return frames*windows
 
