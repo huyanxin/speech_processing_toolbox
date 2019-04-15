@@ -69,16 +69,21 @@ def splice_feats(data, left=0, right=0):
     sfeats = []
     # left 
     for i in range(left, 0, -1):
-        t = data[0:length-left]
+        t = data[:length-i]
         for j in range(i):
             t = np.pad(t, ((1, 0), (0, 0)), 'symmetric')
         sfeats.append(t)
-    # right
     sfeats.append(data)
-
-    for i in range(left, 0, -1):
-        t = data[left:length]
+    # right
+    for i in range(1,right+1):
+        t = data[i:]
         for j in range(i):
             t = np.pad(t, ((0, 1 ), (0, 0)), 'symmetric')
         sfeats.append(t)
-    return np.reshape(np.concatenate(np.array(sfeats), 1),[-1, dims * (left + 1 + right)])
+    return np.concatenate(np.array(sfeats), 1)
+
+def test():
+    a = np.arange(15).reshape([-1,3])
+    b = splice_feats(a,left=3,right=2)
+    print(b.shape)
+test()

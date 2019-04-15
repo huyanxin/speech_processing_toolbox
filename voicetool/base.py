@@ -18,10 +18,11 @@ def audioread(path, sample_rate=16000, selected_channels=[1]):
         selected_channels: for multichannel wave, return selected_channels' data 
     """
     selected_channels = [ x - 1 for x in selected_channels]
-    with wave.open(path, 'rb') as fid:
-        params = fid.getparams()
-        nchannels, samplewidth, framerate , nframes = params[:4]
-        strdata = fid.readframes(nframes*nchannels)
+    fid = wave.open(path, 'rb')
+    params = fid.getparams()
+    nchannels, samplewidth, framerate , nframes = params[:4]
+    strdata = fid.readframes(nframes*nchannels)
+    fid.close()
     wavedata = np.fromstring(strdata, dtype=np.int16)
     wavedata = wavedata*1.0/(32767.0*samplewidth/2)
     if nchannels == 1:
@@ -34,10 +35,11 @@ def audiowrite(path, data, nchannels=1, samplewidth=2, framerate=16000):
     
     data = np.reshape(data, [-1, nchannels])
     nframes = data.shape[0]
-    with wave.open(path, 'wb') as fid:
-        data *= 32767.0
-        fid.setparams((nchannels, samplewidth, framerate, nframes,"NONE", "not compressed"))
-        fid.writeframes(np.array(data, dtype=np.int16).tostring())
+    fid = wave.open(path, 'wb')
+    data *= 32767.0
+    fid.setparams((nchannels, samplewidth, framerate, nframes,"NONE", "not compressed"))
+    fid.writeframes(np.array(data, dtype=np.int16).tostring())
+    fid.close()
 
 def enframe(data, window, win_len, inc):
     data_len = data.shape[0] 
@@ -55,7 +57,6 @@ def enframe(data, window, win_len, inc):
     indices = np.tile(np.arange(0,win_len), (nf,1))+ np.tile(np.arange(0,nf*inc, inc), (win_len,1)).T 
     indices = np.array(indices, dtype=np.int32)
     frames = data[indices]
-    frames = np.reshape(frames,[nf,win_len])
     windows = np.reshape(np.tile(window, nf),[nf,win_len])
     return frames*windows
 
