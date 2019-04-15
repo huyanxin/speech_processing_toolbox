@@ -54,6 +54,7 @@ def enframe(data, window, win_len, inc):
     indices = np.tile(np.arange(0,win_len), (nf,1))+ np.tile(np.arange(0,nf*inc, inc), (win_len,1)).T 
     indices = np.array(indices, dtype=np.int32)
     frames = data[indices]
+    frames = np.reshape(frames,[nf,win_len])
     windows = np.reshape(np.tile(window, nf),[nf,win_len])
     return frames*windows
 
